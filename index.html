@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YOLO Annotation Cleaner</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+<!-- // File: src/main.jsx -->
+<!-- import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css' -->
+
+<!-- ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+) -->
+
+<!-- // File: src/index.css
+@tailwind base;
+@tailwind components;
+@tailwind utilities; -->
+
+<!-- // File: src/App.jsx
+import AnnotationCleaner from './components/AnnotationCleaner'
+
+function App() {
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <AnnotationCleaner />
+    </div>
+  )
+}
+
+export default App -->
+
+<!-- // File: electron/main.js -->
+<!-- const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const path = require('path');
+const fs = require('fs').promises;
+
+let mainWindow;
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  // In development, load from Vite dev server
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+  }
+}
+
+app.whenReady().then(() => {
+  createWindow();
+
+  app.on('activate', function () {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+// File system operations
+ipcMain.handle('select-directory', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Select Dataset Directory'
+  });
+  return result;
+});
+
+ipcMain.handle('read-directory', async (event, dirPath) => {
+  try {
+    const files = await fs.readdir(dirPath);
+    return files.filter(file => 
+      file.toLowerCase().endsWith('.jpg') ||
+      file.toLowerCase().endsWith('.jpeg') ||
+      file.toLowerCase().endsWith('.png')
+    ).map(file => path.join(dirPath, file));
+  } catch (error) {
+    console.error('Error reading directory:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('read-file', async (event, filePath) => {
+  try {
+    const content = await fs.readFile(filePath);
+    return content;
+  } catch (error) {
+    console.error('Error reading file:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('read-text-file', async (event, filePath) => {
+  try {
+    const content = await fs.readFile(filePath, 'utf8');
+    return content;
+  } catch (error) {
+    console.error('Error reading text file:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('write-file', async (event, filePath, content) => {
+  try {
+    await fs.writeFile(filePath, content);
+    return true;
+  } catch (error) {
+    console.error('Error writing file:', error);
+    throw error;
+  }
+}); -->
+
+<!-- // File: electron/preload.js -->
+<!-- const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('electron', {
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  readDirectory: (path) => ipcRenderer.invoke('read-directory', path),
+  readFile: (path) => ipcRenderer.invoke('read-file', path),
+  readTextFile: (path) => ipcRenderer.invoke('read-text-file', path),
+  writeFile: (path, content) => ipcRenderer.invoke('write-file', path, content),
+}); -->
+
+<!-- // File: src/components/AnnotationCleaner.jsx -->
+<!-- import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, ArrowRight, Save, Undo, FolderOpen } from 'lucide-react';
+
+const AnnotationCleaner = () => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [image, setImage] = useState(null);
+  const [annotations, setAnnotations] = useState([]);
+  const [clickPoint, setClickPoint] = useState(null);
+  const [deletedAnnotations, setDeletedAnnotations] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [currentImagePath, setCurrentImagePath] = useState('');
+  const [loading, setLoading] = useState(false);
+  const canvasRef = useRef(null);
+  const originalCanvasRef = useRef(null);
+
+  const loadImageAndAnnotations = async (index) => {
+    if (!imageFiles.length || index >= imageFiles.length) return;
+
+    setLoading(true);
+    try {
+      const imagePath = imageFiles[index];
+      setCurrentImagePath(imagePath);
+
+      // Load image
+      const imageBuffer = await window.electron.readFile(imagePath);
+      const blob = new Blob([imageBuffer]);
+      const img = new Image();
+      img.src = URL.createObjectURL(blob);
+
+      await new Promise((resolve) => {
+        img.onload = () => {
+          setImage(img);
+          
+          // Calculate canvas size while maintaining aspect ratio
+          const maxWidth = 800;
+          const maxHeight = 600;
+          let canvasWidth = img.width;
+          let canvasHeight = img.height;
+          
+          if (canvasWidth > maxWidth) {
+            canvasHeight = (maxWidth / canvasWidth) * canvasHeight;
+            canvasWidth = maxWidth;
+          }
+          if (canvasHeight > maxHeight) {
+            canvasWidth = (maxHeight / canvasHeight) * canvasWidth;
+            canvasHeight = maxHeight;
+          }
+          
+          if (canvasRef.current && originalCanvasRef.current) {
+            canvasRef.current.width = canvasWidth;
+            canvasRef.current.height = canvasHeight;
+            originalCanvasRef.current.width = canvasWidth;
+            originalCanvasRef.current.height = canvasHeight;
+          }
+          resolve();
+        };
+      });
+
+      // Load corresponding label file
+      const labelPath = imagePath.replace('/images/', '/labels/').replace(/\.(jpg|jpeg|png)$/i, '.txt');
+      const labelContent = await window.electron.readTextFile(labelPath);
+      const loadedAnnotations = labelContent
+        .trim()
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => line.split(' ').map(Number));
+      
+      setAnnotations(loadedAnnotations);
+      setDeletedAnnotations([]);
+      
+    } catch (error) {
+      console.error('Error loading image/annotations:', error);
+      setAnnotations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDirectorySelect = async () => {
+    try {
+      const result = await window.electron.selectDirectory();
+      if (!result.canceled) {
+        const imagesPath = `${result.filePaths[0]}/images`;
+        const files = await window.electron.readDirectory(imagesPath);
+        setImageFiles(files);
+        setCurrentImageIndex(0);
+        await loadImageAndAnnotations(0);
+      }
+    } catch (error) {
+      console.error('Error selecting directory:', error);
+    }
+  };
+
+  const saveAnnotations = async () => {
+    if (!currentImagePath) return;
+    
+    try {
+      const labelPath = currentImagePath.replace('/images/', '/labels/').replace(/\.(jpg|jpeg|png)$/i, '.txt');
+      const content = annotations
+        .map(ann => ann.join(' '))
+        .join('\n');
+      
+      await window.electron.writeFile(labelPath, content);
+      console.log('Annotations saved successfully');
+    } catch (error) {
+      console.error('Error saving annotations:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (imageFiles.length) {
+      loadImageAndAnnotations(currentImageIndex);
+    }
+  }, [currentImageIndex, imageFiles]);
+
+  const drawImage = () => {
+    if (!image || !canvasRef.current || !originalCanvasRef.current) return;
+
+    const canvasWidth = canvasRef.current.width;
+    const canvasHeight = canvasRef.current.height;
+    
+    // Draw original image
+    const origCtx = originalCanvasRef.current.getContext('2d');
+    origCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+    origCtx.drawImage(image, 0, 0, canvasWidth, canvasHeight);
+
+    // Draw annotated image
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    ctx.drawImage(image, 0, 0, canvasWidth, canvasHeight);
+
+    // Draw bounding boxes
+    annotations.forEach((ann, idx) => {
+      const [classId, x_center, y_center, width, height] = ann;
+      const x = (x_center - width/2) * canvasWidth;
+      const y = (y_center - height/2) * canvasHeight;
+      const w = width * canvasWidth;
+      const h = height * canvasHeight;
+
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+      
+      // Add index label
+      ctx.fillStyle = 'red';
+      ctx.font = '16px Arial';
+      ctx.fillText(idx.toString(), x, y - 5);
+    });
+
+    // Draw click point
+    if (clickPoint) {
+      ctx.fillStyle = 'blue';
+      ctx.beginPath();
+      ctx.arc(clickPoint.x, clickPoint.y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  };
+
+  useEffect(() => {
+    drawImage();
+  }, [image, annotations, clickPoint]);
+
+  const handleCanvasClick = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const canvasWidth = canvasRef.current.width;
+    const canvasHeight = canvasRef.current.height;
+    
+    // Get click coordinates relative to canvas
+    const x = ((e.clientX - rect.left) / rect.width) * canvasWidth;
+    const y = ((e.clientY - rect.top) / rect.height) * canvasHeight;
+    setClickPoint({ x, y });
+
+    // Check if click is inside any box
+    const clickedIndex = annotations.findIndex((ann) => {
+      const [_, x_center, y_center, width, height] = ann;
+      const boxX = (x_center - width/2) * canvasWidth;
+      const boxY = (y_center - height/2) * canvasHeight;
+      const boxW = width * canvasWidth;
+      const boxH = height * canvasHeight;
+
+      return (
+        x >= boxX && x <= boxX + boxW &&
+        y >= boxY && y <= boxY + boxH
+      );
+    });
+
+    if (clickedIndex !== -1) {
+      const newAnnotations = [...annotations];
+      const deleted = newAnnotations.splice(clickedIndex, 1)[0];
+      setDeletedAnnotations([...deletedAnnotations, deleted]);
+      setAnnotations(newAnnotations);
+    }
+  };
+
+  const handleUndo = () => {
+    if (deletedAnnotations.length > 0) {
+      const newDeleted = [...deletedAnnotations];
+      const restored = newDeleted.pop();
+      setDeletedAnnotations(newDeleted);
+      setAnnotations([...annotations, restored]);
+    }
+  };
+
+  const handleNext = async () => {
+    if (currentImageIndex < imageFiles.length - 1) {
+      await saveAnnotations();
+      setCurrentImageIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePrevious = async () => {
+    if (currentImageIndex > 0) {
+      await saveAnnotations();
+      setCurrentImageIndex(prev => prev - 1);
+    }
+  };
+
+  // Add keyboard event listener
+  useEffect(() => {
+    const handleKeyPress = async (e) => {
+      if (!imageFiles.length) return;
+
+      switch (e.key) {
+        case 'ArrowRight':
+        case ' ': // Spacebar
+        // Continuing src/components/AnnotationCleaner.jsx
+
+        if (currentImageIndex < imageFiles.length - 1) {
+          await saveAnnotations();
+          setCurrentImageIndex(prev => prev + 1);
+        }
+        break;
+      case 'ArrowLeft':
+        if (currentImageIndex > 0) {
+          await saveAnnotations();
+          setCurrentImageIndex(prev => prev - 1);
+        }
+        break;
+      case 'z':
+        if (e.ctrlKey || e.metaKey) {
+          handleUndo();
+        }
+        break;
+      case 's':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          await saveAnnotations();
+        }
+        break;
+    }
+  };
+
+  window.addEventListener('keydown', handleKeyPress);
+  return () => window.removeEventListener('keydown', handleKeyPress);
+}, [currentImageIndex, imageFiles, annotations]);
+
+return (
+  <div className="p-4 max-w-6xl mx-auto">
+    <div className="flex justify-between items-center mb-4">
+      <button
+        className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2"
+        onClick={handleDirectorySelect}
+        disabled={loading}
+      >
+        <FolderOpen className="w-5 h-5" />
+        Select Dataset Directory
+      </button>
+      
+      <div className="flex gap-2 items-center">
+        <button
+          className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+          onClick={handlePrevious}
+          disabled={currentImageIndex === 0 || loading}
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <span className="p-2">
+          {imageFiles.length ? `${currentImageIndex + 1} / ${imageFiles.length}` : 'No images loaded'}
+        </span>
+        <button
+          className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+          onClick={handleNext}
+          disabled={currentImageIndex === imageFiles.length - 1 || loading}
+        >
+          <ArrowRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          className="p-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-400"
+          onClick={handleUndo}
+          disabled={!deletedAnnotations.length || loading}
+        >
+          <Undo className="w-5 h-5" />
+        </button>
+        <button
+          className="p-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
+          onClick={saveAnnotations}
+          disabled={!currentImagePath || loading}
+        >
+          <Save className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+    
+    {loading && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="bg-white p-4 rounded">Loading...</div>
+      </div>
+    )}
+    
+    <div className="flex gap-4">
+      <div className="border rounded p-2">
+        <h3 className="text-center mb-2">Original Image</h3>
+        <canvas
+          ref={originalCanvasRef}
+          className="border"
+        />
+      </div>
+      <div className="border rounded p-2">
+        <h3 className="text-center mb-2">Annotated Image (Click to Remove)</h3>
+        <canvas
+          ref={canvasRef}
+          className="border cursor-pointer"
+          onClick={handleCanvasClick}
+        />
+      </div>
+    </div>
+    
+    <div className="mt-4 space-y-4">
+      <div>
+        <h3 className="font-bold">Current Annotations:</h3>
+        <pre className="bg-gray-100 p-2 rounded">
+          {annotations.map(ann => ann.join(' ')).join('\n')}
+        </pre>
+      </div>
+
+      <div className="bg-gray-100 p-4 rounded">
+        <h3 className="font-bold mb-2">Keyboard Shortcuts:</h3>
+        <ul className="space-y-1">
+          <li>→ or Space: Next image (auto-saves)</li>
+          <li>←: Previous image (auto-saves)</li>
+          <li>Ctrl/Cmd + Z: Undo last deletion</li>
+          <li>Ctrl/Cmd + S: Manual save</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+);
+};
+
+export default AnnotationCleaner; -->

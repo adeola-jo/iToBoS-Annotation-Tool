@@ -1,0 +1,39 @@
+{
+  "name": "iToBoS-Annotation-Tool",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "gh-pages -d dist",
+    "electron:dev": "npx concurrently \"npm run dev\" \"npx wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "vite build && electron-builder"
+  },
+  "homepage": "https://adeola-jo.github.io/iToBoS-Annotation-Tool",
+  "dependencies": {
+    "@electron/remote": "^2.0.12",
+    "electron": "^28.0.0",
+    "lucide-react": "^0.294.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "electron-builder": "^24.9.1",
+    "gh-pages": "^6.2.0",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "vite": "^5.4.10",
+    "vite-plugin-electron": "^0.28.8",
+    "wait-on": "^7.2.0",
+    "gh-pages": "^latest_version"
+  }
+}
