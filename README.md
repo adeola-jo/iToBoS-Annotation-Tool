@@ -1,5 +1,5 @@
 
-# <img src="src/assets/itoboslogo.png" alt="iToBoS Logo" width="40" style="vertical-align: middle;"> iToBoS Annotation Tool
+# <img src="src/assets/itoboslogo.png" alt="iToBoS Logo" width="60" style="vertical-align: middle;"> iToBoS Annotation Tool
 
 A desktop application built with React, Electron, and Vite for creating, cleaning, and managing annotations in YOLO format. Originally developed for the iToBoS skin lesion dataset, this versatile tool can be used for annotating any type of image dataset for training object detection models. It allows users to easily view, edit, and manage bounding box annotations with a simple and intuitive interface.
 
