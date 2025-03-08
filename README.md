@@ -5,7 +5,7 @@
 
 A desktop application built with React, Electron, and Vite for cleaning and managing annotations in YOLO format for the iToBoS project. This tool allows users to easily view, edit, and manage bounding box annotations for image datasets.
 
-![Demo GIF](demo.gif)
+![Demo GIF](src/assets/demo.gif)
 
 ## Features
 
