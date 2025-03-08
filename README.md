@@ -1,7 +1,7 @@
 
 # <img src="src/assets/itoboslogo.png" alt="iToBoS Logo" width="40" style="vertical-align: middle;"> iToBoS Annotation Tool
 
-A desktop application built with React, Electron, and Vite for cleaning and managing annotations in YOLO format for the iToBoS project. This tool allows users to easily view, edit, and manage bounding box annotations for image datasets.
+A desktop application built with React, Electron, and Vite for creating, cleaning, and managing annotations in YOLO format. Originally developed for the iToBoS skin lesion dataset, this versatile tool can be used for annotating any type of image dataset for training object detection models. It allows users to easily view, edit, and manage bounding box annotations with a simple and intuitive interface.
 
 ![Demo GIF](src/assets/demo.gif)
 
@@ -79,6 +79,7 @@ iToBoS-Annotation-Tool/
 - **Desktop Integration**: Electron for file system access and native features
 - **Build Tools**: Vite for fast development and optimized builds
 - **Annotation Format**: YOLO format (class_id, x_center, y_center, width, height)
+- **Versatility**: While developed for skin lesion detection, the tool works with any object detection dataset that uses YOLO format
 
 ## Development
 
